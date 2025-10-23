@@ -51,6 +51,8 @@ def config_addargs(config, args):
     if args.preset is None:
         if "default" not in config:
             return
+        if config["default"] == "none":
+            return
         args.preset = config["default"]
 
     if args.preset not in config["presets"]:
@@ -68,12 +70,16 @@ def kdb_load(presetname, sudo, config):
         print("No preset specified and no default configured")
         sys.exit(1)
 
-    if presetname not in config["presets"]:
-        # first, try again with a number
+    # due to yaml making things that look like numbers be numbers, the loaded
+    # config may contain a number instead of a string
+    try:
         presetname = int(presetname)
-        if presetname not in config["presets"]:
-            print(f"No preset config for {presetname}")
-            sys.exit(1)
+    except ValueError:
+        pass
+
+    if presetname not in config["presets"]:
+        print(f"No preset config for {presetname}")
+        sys.exit(1)
 
     preset = config["presets"][presetname]
 
@@ -193,7 +199,7 @@ def argparser():
 
     ap.add_argument("-k", "--kdb")
     ap.add_argument("--password")
-    ap.add_argument("--preset", "-s")
+    ap.add_argument("--preset", "-s", default=None)
     ap.add_argument("--add", "-a")
     ap.add_argument("search")
 
