@@ -136,7 +136,7 @@ def sgr(*modes):
 
 
 def render_password(password):
-    return sgr("bold","red","redbg") + password + sgr()
+    return sgr("bold", "red", "redbg") + password + sgr()
 
 
 def render_list(found):
@@ -223,6 +223,7 @@ def main():
         render_sudo(found)
     else:
         render_list(found)
+
 
 if __name__ == "__main__":
     main()
