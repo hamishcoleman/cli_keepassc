@@ -9,6 +9,7 @@
 # ...
 
 import argparse
+import getpass
 import yaml
 import os
 import sys
@@ -62,7 +63,7 @@ def config_addargs(config, args):
         config["presets"][args.preset]["kdb"] = args.kdb
 
 
-def kdb_load(presetname, config):
+def kdb_load(presetname, sudo, config):
     if presetname is None:
         print("No preset specified and no default configured")
         sys.exit(1)
@@ -77,11 +78,10 @@ def kdb_load(presetname, config):
     preset = config["presets"][presetname]
 
     if "pass" not in preset:
-        # todo:
-        # if not sudo then readpass
-        # else die
-        print("cannot prompt")
-        sys.exit(1)
+        if sudo:
+            print("sudo mode cannot prompt")
+            sys.exit(1)
+        preset["pass"] = getpass.getpass()
 
     k = PyKeePass(preset["kdb"], preset["pass"])
 
@@ -212,7 +212,7 @@ def main():
         print("Option:", args)
         print("Config:", config)
 
-    k = kdb_load(args.preset, config)
+    k = kdb_load(args.preset, args.sudo, config)
 
     # TODO:
     # subp_add()
