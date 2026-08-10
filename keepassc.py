@@ -142,6 +142,9 @@ def sgr(*modes):
 
 
 def render_password(password):
+    if password is None:
+        return ""
+
     return sgr("bold", "red", "redbg") + password + sgr()
 
 
