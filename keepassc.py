@@ -15,6 +15,7 @@ import yaml
 import onetimepass
 import os
 import sys
+import urllib.parse
 
 from pykeepass import PyKeePass
 
@@ -167,11 +168,35 @@ def maybe_totp(item):
     # TODO:
     # - decode the real totp settings within an item..
 
-    if not item.title.endswith("oath totp"):
-        return ""
+    if item.title.endswith("oath totp"):
+        totp = onetimepass.get_totp(item.password)
+        digits = 6
+        return f"{totp:0{digits}}"
 
-    totp = onetimepass.get_totp(item.password)
-    return totp
+    if item.otp is not None:
+        # otpauth://totp/okta:user%40example.com?secret=xyzzy&period=30&digits=6&issuer=okta
+        url = urllib.parse.urlsplit(item.otp)
+
+        # Sanity checks
+        if url.scheme != "otpauth":
+            return ""
+        if url.netloc != "totp":
+            return ""
+
+        qs = urllib.parse.parse_qs(url.query)
+
+        # TODO:
+        # - extract and use: period, algorithm
+
+        totp = onetimepass.get_totp(qs["secret"][0])
+
+        digits = 6
+        if "digits" in qs:
+            digits = qs["digits"][0]
+
+        return f"{totp:0{digits}}"
+
+    return ""
 
 
 def render_list(found):
