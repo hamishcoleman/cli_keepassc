@@ -45,6 +45,25 @@ def config_cache_load(config, filename):
             config["presets"][name][key] = val
 
 
+def config_cache_save(config, filename):
+    """Write out the cache"""
+    cache = {}
+
+    for name, preset in config["presets"].items():
+        cache[name] = {}
+        cache[name]["kdb"] = preset["kdb"]
+        cache[name]["pass"] = preset["pass"]
+
+    with open(filename, "w") as f:
+        yaml.safe_dump(
+            cache,
+            stream=f,
+            explicit_start=True,
+            explicit_end=True,
+            default_flow_style=False,
+        )
+
+
 def config_addargs(config, args):
     """Override any loaded config with CLI args"""
 
@@ -65,17 +84,10 @@ def config_addargs(config, args):
         config["presets"][args.preset]["kdb"] = args.kdb
 
 
-def kdb_load(presetname, sudo, config):
+def kdb_load(presetname, sudo, config, cachefile):
     if presetname is None:
         print("No preset specified and no default configured")
         sys.exit(1)
-
-    # due to yaml making things that look like numbers be numbers, the loaded
-    # config may contain a number instead of a string
-    try:
-        presetname = int(presetname)
-    except ValueError:
-        pass
 
     if presetname not in config["presets"]:
         print(f"No preset config for {presetname}")
@@ -83,18 +95,19 @@ def kdb_load(presetname, sudo, config):
 
     preset = config["presets"][presetname]
 
+    persist = False
     if "pass" not in preset:
         if sudo:
             print("sudo mode cannot prompt")
             sys.exit(1)
+        persist = True
         preset["pass"] = getpass.getpass()
 
     k = PyKeePass(preset["kdb"], preset["pass"])
 
-    # TODO:
-    # that kdb and pass combo worked, so ensure we write the cache
-    # config_cachefile_save()
-    # DumpFile($option->{cachefile}, $config->{presets});
+    if persist:
+        # that kdb and pass combo worked, so ensure we write the cache
+        config_cache_save(config, cachefile)
 
     return k
 
@@ -213,6 +226,13 @@ def argparser():
 def main():
     args = argparser()
 
+    # due to yaml making things that look like numbers be numbers, the loaded
+    # config may contain a number instead of a string
+    try:
+        args.preset = int(args.preset)
+    except (ValueError, TypeError):
+        pass
+
     config = config_load(args.config)
     config_cache_load(config, args.cachefile)
     config_addargs(config, args)
@@ -221,7 +241,7 @@ def main():
         print("Option:", args)
         print("Config:", config)
 
-    k = kdb_load(args.preset, args.sudo, config)
+    k = kdb_load(args.preset, args.sudo, config, args.cachefile)
 
     # TODO:
     # subp_add()
