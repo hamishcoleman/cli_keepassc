@@ -158,7 +158,7 @@ def render_password(password):
     if password is None:
         return ""
 
-    return sgr("bold", "red", "redbg") + password + sgr()
+    return sgr("red", "redbg") + password + sgr()
 
 
 def render_list(found):
