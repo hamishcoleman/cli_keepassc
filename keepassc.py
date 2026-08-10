@@ -4,6 +4,7 @@
 # :dotsctl:
 #   destdir: ~/bin/
 #   dpkg:
+#     - python3-onetimepass
 #     - python3-pykeepass
 #     - python3-yaml
 # ...
@@ -11,6 +12,7 @@
 import argparse
 import getpass
 import yaml
+import onetimepass
 import os
 import sys
 
@@ -161,18 +163,38 @@ def render_password(password):
     return sgr("red", "redbg") + password + sgr()
 
 
+def maybe_totp(item):
+    # TODO:
+    # - decode the real totp settings within an item..
+
+    if not item.title.endswith("oath totp"):
+        return ""
+
+    totp = onetimepass.get_totp(item.password)
+    return totp
+
+
 def render_list(found):
     # TODO sort group,title,username
 
     for item in found:
         # TODO column widths
         group = "/" + "/".join(item.path[1:-1])
+
+        if item.url is None:
+            url = ""
+        else:
+            url = item.url
+
+        totp = maybe_totp(item)
+
         print(
             group,
             item.title,
             item.username,
             render_password(item.password),
-            item.url
+            url,
+            totp
         )
 
 
